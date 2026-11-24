@@ -1,4 +1,3 @@
-import difflib
 import logging
 import sys
 import unicodedata
@@ -55,31 +54,31 @@ def _changed_line_ranges(changes: list[sublime.TextChange]) -> list[tuple[int, i
 
 def _get_nfd_ranges_in_line(raw_line: str) -> list[tuple[int, int]]:
 
-    nfc_line = unicodedata.normalize("NFC", raw_line)
-    if raw_line == nfc_line:
-        return []
-
     nfd_ranges: list[tuple[int, int]] = []
-
-    matcher = difflib.SequenceMatcher(None, raw_line, nfc_line, autojunk=False)
-
-    for tag, i1, i2, _j1, _j2 in matcher.get_opcodes():
-        if tag == "replace":
-            nfd_ranges.append((i1, i2))
+    i = 0
+    while i < len(raw_line):
+        if unicodedata.combining(raw_line[i]) == 0:
+            i += 1
+            continue
+        start = max(i - 1, 0)
+        while i < len(raw_line) and unicodedata.combining(raw_line[i]) != 0:
+            i += 1
+        nfd_ranges.append((start, i))
 
     return nfd_ranges
 
 
 class UnicodeNfdHighlighterListener(sublime_plugin.TextChangeListener):
-    def on_text_changed(self, changes: list[sublime.TextChange]) -> None:
-
-        sorted_changes = sorted(changes, key=lambda c: (c.a.row, c.a.col))
-        changed_line_ranges = _changed_line_ranges(sorted_changes)
-
+    def on_text_changed_async(self, changes: list[sublime.TextChange]) -> None:
         view = self.buffer.primary_view()
         if not view.is_valid():
             logger.warning("View is not valid, skipping processing.")
             return
+
+        target_change_count = view.change_count()
+
+        sorted_changes = sorted(changes, key=lambda c: (c.a.row, c.a.col))
+        changed_line_ranges = _changed_line_ranges(sorted_changes)
 
         if view.size() > MAX_FILE_SIZE:
             return
@@ -100,7 +99,22 @@ class UnicodeNfdHighlighterListener(sublime_plugin.TextChangeListener):
                     for start_col, end_col in nfd_column_ranges
                 )
 
+        current_change_count = view.change_count()
+        if current_change_count != target_change_count:
+            logger.warning(
+                "View change count changed during processing (target: %d, current: %d). Skipping highlight update.",
+                target_change_count,
+                current_change_count,
+            )
+            return
+
         self._highlight_nfd_in_view(new_regions=new_regions, changed_rows=changed_rows)
+
+    def on_revert_async(self) -> None:
+        pass
+
+    def on_reload_async(self) -> None:
+        pass
 
     def _highlight_nfd_in_view(self, *, new_regions: list[sublime.Region], changed_rows: list[int]) -> None:
 

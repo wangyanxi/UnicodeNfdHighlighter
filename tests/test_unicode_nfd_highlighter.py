@@ -59,10 +59,18 @@ class TestTextChangeListener(TestCase):
         actual_ranges = _changed_line_ranges(changes)
         self.assertEqual(actual_ranges, expected_ranges)
 
-    def test_get_nfd_ranges_in_line(self) -> None:
+    def test_get_nfd_ranges_in_line_1(self) -> None:
         nfd_char = normalize("NFD", "ご")
         raw_line = f"abc{nfd_char}def{nfd_char}"
 
         expected_ranges = [(3, 5), (8, 10)]
+        actual_ranges = _get_nfd_ranges_in_line(raw_line)
+        self.assertEqual(actual_ranges, expected_ranges)
+
+    def test_get_nfd_ranges_in_line_2(self) -> None:
+        nfd_char = normalize("NFD", "じ")
+        raw_line = f"{nfd_char}a{nfd_char}a{nfd_char}"
+
+        expected_ranges = [(0, 2), (3, 5), (6, 8)]
         actual_ranges = _get_nfd_ranges_in_line(raw_line)
         self.assertEqual(actual_ranges, expected_ranges)
