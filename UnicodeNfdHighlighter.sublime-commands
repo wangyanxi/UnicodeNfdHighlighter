@@ -1,0 +1,10 @@
+[
+    {
+        "caption": "UnicodeNfdHighlighter: Check File",
+        "command": "check_file"
+    },
+    {
+        "caption": "UnicodeNfdHighlighter: Convert to NFC",
+        "command": "convert_to_nfc",
+    }
+]

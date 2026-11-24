@@ -214,4 +214,14 @@ def show_toast(view: sublime.View, message: str) -> None:
         location=-1,
         max_width=500,
     )
-    sublime.set_timeout(lambda: view.hide_popup(), 3000)
+    sublime.set_timeout(lambda: view.hide_popup(), 5 * 1000)
+
+
+class CheckFileCommand(sublime_plugin.TextCommand):
+    def run(self, edit: sublime.Edit) -> None:
+        logger.info("Running CheckFileCommand")
+
+
+class ConvertToNFCCommand(sublime_plugin.TextCommand):
+    def run(self, edit: sublime.Edit) -> None:
+        logger.info("Running ConvertToNFCCommand")
