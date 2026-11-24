@@ -14,7 +14,7 @@ wheels = [
 [[package]]
 name = "unicode-nfd-highlighter"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
