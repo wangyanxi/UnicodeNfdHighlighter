@@ -1,0 +1,66 @@
+[project]
+name = "unicode-nfd-highlighter"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Yanxi Wang", email = "wangyanxi@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "sublime-text-stubs>=4213.1",
+]
+
+# https://docs.astral.sh/ruff/settings/
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+
+target-version = "py314"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+
+extend-select = [
+    "ISC",      # flake8-implicit-str-concat
+    "G",        # flake8-logging-format
+    "T20",      # flake8-print
+    "B",        # flake8-bugbear
+    "ANN",      # flake8-annotations
+    "ASYNC",    # flake8-async
+    "S",        # flake8-bandit
+    "FBT",      # flake8-boolean-trap
+    "A",        # flake8-builtins
+    "COM",      # flake8-commas
+    "C4",       # flake8-comprehensions
+    "DTZ",      # flake8-datetimez
+    "T10",      # flake8-debugger
+    "RET",      # flake8-return
+    "PIE",      # flake8-pie
+    "ICN",      # flake8-import-conventions
+    "TID",      # flake8-tidy-imports
+    "SLF",      # flake8-self
+    "PTH",      # flake8-use-pathlib
+    "TC",       # flake8-type-checking
+    "F",        # Pyflakes
+    "E", "W",   # pycodestyle
+    "I",        # isort
+    "UP",       # Pyupgrade
+    "PERF",     # Perflint
+    "FURB",     # refurb
+    "TRY",      # tryceratops
+]
+
+fixable = ["ALL"]
+ignore = ["E501"]
