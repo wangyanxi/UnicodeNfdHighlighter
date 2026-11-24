@@ -1,4 +1,3 @@
-import difflib
 import logging
 import sys
 import unicodedata
@@ -55,17 +54,16 @@ def _changed_line_ranges(changes: list[sublime.TextChange]) -> list[tuple[int, i
 
 def _get_nfd_ranges_in_line(raw_line: str) -> list[tuple[int, int]]:
 
-    nfc_line = unicodedata.normalize("NFC", raw_line)
-    if raw_line == nfc_line:
-        return []
-
     nfd_ranges: list[tuple[int, int]] = []
-
-    matcher = difflib.SequenceMatcher(None, raw_line, nfc_line, autojunk=False)
-
-    for tag, i1, i2, _j1, _j2 in matcher.get_opcodes():
-        if tag == "replace":
-            nfd_ranges.append((i1, i2))
+    i = 0
+    while i < len(raw_line):
+        if unicodedata.combining(raw_line[i]) == 0:
+            i += 1
+            continue
+        start = max(i - 1, 0)
+        while i < len(raw_line) and unicodedata.combining(raw_line[i]) != 0:
+            i += 1
+        nfd_ranges.append((start, i))
 
     return nfd_ranges
 
