@@ -71,15 +71,16 @@ def _get_nfd_ranges_in_line(raw_line: str) -> list[tuple[int, int]]:
 
 
 class UnicodeNfdHighlighterListener(sublime_plugin.TextChangeListener):
-    def on_text_changed(self, changes: list[sublime.TextChange]) -> None:
-
-        sorted_changes = sorted(changes, key=lambda c: (c.a.row, c.a.col))
-        changed_line_ranges = _changed_line_ranges(sorted_changes)
-
+    def on_text_changed_async(self, changes: list[sublime.TextChange]) -> None:
         view = self.buffer.primary_view()
         if not view.is_valid():
             logger.warning("View is not valid, skipping processing.")
             return
+
+        target_change_count = view.change_count()
+
+        sorted_changes = sorted(changes, key=lambda c: (c.a.row, c.a.col))
+        changed_line_ranges = _changed_line_ranges(sorted_changes)
 
         if view.size() > MAX_FILE_SIZE:
             return
@@ -100,7 +101,22 @@ class UnicodeNfdHighlighterListener(sublime_plugin.TextChangeListener):
                     for start_col, end_col in nfd_column_ranges
                 )
 
+        current_change_count = view.change_count()
+        if current_change_count != target_change_count:
+            logger.warning(
+                "View change count changed during processing (target: %d, current: %d). Skipping highlight update.",
+                target_change_count,
+                current_change_count,
+            )
+            return
+
         self._highlight_nfd_in_view(new_regions=new_regions, changed_rows=changed_rows)
+
+    def on_revert_async(self) -> None:
+        pass
+
+    def on_reload_async(self) -> None:
+        pass
 
     def _highlight_nfd_in_view(self, *, new_regions: list[sublime.Region], changed_rows: list[int]) -> None:
 
