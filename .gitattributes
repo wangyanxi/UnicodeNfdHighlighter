@@ -1,0 +1,7 @@
+.github/** export-ignore
+tests/** export-ignore
+.gitignore export-ignore
+.pre-commit-config.yaml export-ignore
+pyproject.toml export-ignore
+unittesting.json export-ignore
+uv.lock export-ignore
