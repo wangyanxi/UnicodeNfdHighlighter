@@ -9,7 +9,7 @@ Requires Sublime Text 4, build 4205 or later.
 
 ## Install
 
-Open the Command Palette with `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS), choose **Package Control: Install Package**, then select **Unicode NFD Highlighter**.
+TODO
 
 ## Highlighting
 
