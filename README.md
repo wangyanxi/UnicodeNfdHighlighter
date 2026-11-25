@@ -11,10 +11,6 @@ Requires Sublime Text 4, build 4205 or later.
 
 TODO
 
-## Highlighting
-
-NFD text is highlighted automatically when a file is opened or edited.
-
 ## Additional Commands
 
 - **UnicodeNfdHighlighter: Check File** — manually scan and highlight NFD text in the current file.
