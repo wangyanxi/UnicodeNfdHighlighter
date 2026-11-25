@@ -1,10 +1,20 @@
 name: unit-tests
 
-on: [push, pull_request]
+on: push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+# If you specify the access for any of these permissions, all of those that are not specified are set to none
+permissions:
+  contents: read
 
 jobs:
   run-tests:
     runs-on: ubuntu-26.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: SublimeText/UnitTesting/actions/setup@v1
