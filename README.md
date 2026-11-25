@@ -2,6 +2,9 @@
 
 A Sublime Text plugin that highlights text containing decomposed Unicode characters (NFD).
 
+<img width="610" height="454" alt="s" src="https://github.com/user-attachments/assets/0952d349-95d6-4468-9ed9-474b64376832" />
+
+
 Requires Sublime Text 4, build 4205 or later.
 
 ## Install
