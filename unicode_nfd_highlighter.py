@@ -167,7 +167,7 @@ class UnicodeNfdHighlighterListener(sublime_plugin.TextChangeListener):
             )
 
 
-class SpellCheckViewListener(sublime_plugin.ViewEventListener):
+class UnicodeNfdHighlighterViewListener(sublime_plugin.ViewEventListener):
     @classmethod
     def applies_to_primary_view_only(cls) -> bool:
         return True
@@ -195,26 +195,28 @@ class SpellCheckViewListener(sublime_plugin.ViewEventListener):
 def show_toast(view: sublime.View, message: str) -> None:
     if not view.is_valid():
         return
-    bg_color = "var(--orangish)"
+
     html = f"""
-    <body id="spell-toast">
+    <body id="unicode-nfd-highlighter-toast">
         <style>
             body {{
-                background-color: {bg_color};
-                color: #ffffff;
-                padding: 6px 12px;
-                border-radius: 4px;
+                background-color: color(var(--background) lightness(- 5%));
+                color: var(--foreground);
+                padding: 0;
+                margin: 0;
                 font-family: system;
-                font-size: 12px;
-                font-weight: bold;
+                font-size: 1.2rem;
+            }}
+            .message {{
+                margin: 0.8rem;
             }}
         </style>
-        <div>{message}</div>
+        <div class="message">{message}</div>
     </body>
     """
 
     view.show_popup(
-        html,
+        content=html,
         flags=sublime.HIDE_ON_MOUSE_MOVE_AWAY,
         location=-1,
         max_width=500,
@@ -225,6 +227,7 @@ def show_toast(view: sublime.View, message: str) -> None:
 class CheckFileCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit) -> None:
         logger.info("Running CheckFileCommand")
+
         view = self.view
         if view.size() > MAX_FILE_SIZE:
             msg = "UnicodeNfdHighlighter skipped: File too large."
@@ -232,11 +235,13 @@ class CheckFileCommand(sublime_plugin.TextCommand):
             view.set_status(VIEW_STATUS_KEY, "UnicodeNfdHighlighter: Skipped (File too large)")
             return
 
-        nfd_regions = _get_nfd_regions_from_view(view)
         buffer = view.buffer()
         if not buffer:
             return
+
+        nfd_regions = _get_nfd_regions_from_view(view)
         _highlight_regions_in_buffer(buffer, nfd_regions)
+
         view.erase_status(VIEW_STATUS_KEY)
         if nfd_regions:
             show_toast(view, f"Found {len(nfd_regions)} NFD sequence(s).")
@@ -247,6 +252,7 @@ class CheckFileCommand(sublime_plugin.TextCommand):
 class ConvertToNFCCommand(sublime_plugin.TextCommand):
     def run(self, edit: sublime.Edit) -> None:
         logger.info("Running ConvertToNFCCommand")
+
         view = self.view
         full_region = sublime.Region(0, view.size())
         text = view.substr(full_region)
