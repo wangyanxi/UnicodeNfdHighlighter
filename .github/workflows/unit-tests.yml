@@ -1,0 +1,13 @@
+name: unit-tests
+
+on: [push, pull_request]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: SublimeText/UnitTesting/actions/setup@v1
+        with:
+          sublime-text-version: 4
+      - uses: SublimeText/UnitTesting/actions/run-tests@v1
