@@ -68,6 +68,32 @@ def _get_nfd_ranges_in_line(raw_line: str) -> list[tuple[int, int]]:
     return nfd_ranges
 
 
+def _get_nfd_regions_from_view(view: sublime.View) -> list[sublime.Region]:
+    full_region = sublime.Region(0, view.size())
+    nfd_regions: list[sublime.Region] = []
+
+    for row, line_region in enumerate(view.lines(full_region)):
+        line_text = view.substr(line_region)
+        nfd_column_ranges = _get_nfd_ranges_in_line(line_text)
+        nfd_regions.extend(
+            sublime.Region(view.text_point(row=row, col=start_col), view.text_point(row=row, col=end_col))
+            for start_col, end_col in nfd_column_ranges
+        )
+
+    return nfd_regions
+
+
+def _highlight_regions_in_buffer(buffer: sublime.Buffer, regions: list[sublime.Region]) -> None:
+
+    for view in buffer.views():
+        view.add_regions(
+            key=REGION_KEY,
+            regions=regions,
+            scope="region.redish",
+            flags=sublime.DRAW_NO_FILL,
+        )
+
+
 class UnicodeNfdHighlighterListener(sublime_plugin.TextChangeListener):
     def on_text_changed_async(self, changes: list[sublime.TextChange]) -> None:
         view = self.buffer.primary_view()
@@ -141,7 +167,7 @@ class UnicodeNfdHighlighterListener(sublime_plugin.TextChangeListener):
             )
 
 
-class SpellCheckViewListener(sublime_plugin.ViewEventListener):
+class UnicodeNfdHighlighterViewListener(sublime_plugin.ViewEventListener):
     @classmethod
     def applies_to_primary_view_only(cls) -> bool:
         return True
@@ -160,58 +186,80 @@ class SpellCheckViewListener(sublime_plugin.ViewEventListener):
         self.check_and_highlight()
 
     def check_and_highlight(self) -> None:
-        view = self.view
-        full_region = sublime.Region(0, view.size())
-
-        new_regions: list[sublime.Region] = []
-        for row, line_region in enumerate(view.lines(full_region)):
-            line_text = view.substr(line_region)
-            nfd_column_ranges = _get_nfd_ranges_in_line(line_text)
-            if len(nfd_column_ranges) == 0:
-                continue
-            new_regions.extend(
-                sublime.Region(view.text_point(row=row, col=start_col), view.text_point(row=row, col=end_col))
-                for start_col, end_col in nfd_column_ranges
-            )
-
         buffer = self.view.buffer()
         if not buffer:
             return
-
-        for view in buffer.views():
-            view.add_regions(
-                key=REGION_KEY,
-                regions=new_regions,
-                scope="region.redish",
-                flags=sublime.DRAW_NO_FILL,
-            )
+        _highlight_regions_in_buffer(buffer, _get_nfd_regions_from_view(self.view))
 
 
 def show_toast(view: sublime.View, message: str) -> None:
     if not view.is_valid():
         return
-    bg_color = "var(--orangish)"
+
     html = f"""
-    <body id="spell-toast">
+    <body id="unicode-nfd-highlighter-toast">
         <style>
             body {{
-                background-color: {bg_color};
-                color: #ffffff;
-                padding: 6px 12px;
-                border-radius: 4px;
+                background-color: color(var(--background) lightness(- 5%));
+                color: var(--foreground);
+                padding: 0;
+                margin: 0;
                 font-family: system;
-                font-size: 12px;
-                font-weight: bold;
+                font-size: 1.2rem;
+            }}
+            .message {{
+                margin: 0.8rem;
             }}
         </style>
-        <div>{message}</div>
+        <div class="message">{message}</div>
     </body>
     """
 
     view.show_popup(
-        html,
+        content=html,
         flags=sublime.HIDE_ON_MOUSE_MOVE_AWAY,
         location=-1,
         max_width=500,
     )
-    sublime.set_timeout(lambda: view.hide_popup(), 3000)
+    sublime.set_timeout(lambda: view.hide_popup(), 5 * 1000)
+
+
+class CheckFileCommand(sublime_plugin.TextCommand):
+    def run(self, edit: sublime.Edit) -> None:
+        logger.info("Running CheckFileCommand")
+
+        view = self.view
+        if view.size() > MAX_FILE_SIZE:
+            msg = "UnicodeNfdHighlighter skipped: File too large."
+            show_toast(view, msg)
+            view.set_status(VIEW_STATUS_KEY, "UnicodeNfdHighlighter: Skipped (File too large)")
+            return
+
+        buffer = view.buffer()
+        if not buffer:
+            return
+
+        nfd_regions = _get_nfd_regions_from_view(view)
+        _highlight_regions_in_buffer(buffer, nfd_regions)
+
+        view.erase_status(VIEW_STATUS_KEY)
+        if nfd_regions:
+            show_toast(view, f"Found {len(nfd_regions)} NFD sequence(s).")
+        else:
+            show_toast(view, "No NFD text found.")
+
+
+class ConvertToNFCCommand(sublime_plugin.TextCommand):
+    def run(self, edit: sublime.Edit) -> None:
+        logger.info("Running ConvertToNFCCommand")
+
+        view = self.view
+        full_region = sublime.Region(0, view.size())
+        text = view.substr(full_region)
+        normalized_text = unicodedata.normalize("NFC", text)
+        if normalized_text == text:
+            show_toast(view, "No NFD text found.")
+            return
+
+        view.replace(edit, full_region, normalized_text)
+        show_toast(view, "Converted text to NFC.")
